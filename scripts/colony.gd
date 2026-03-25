@@ -12,13 +12,16 @@ var population: int = 0
 var food_collected: int = 0
 var food_for_reproduction: int = 0
 var is_alive: bool = true
+var ants_spawned: int = 0
+var combat_losses: int = 0
 
 var _pheromone_map: Node2D
 var _ants_container: Node2D
 var _ant_scene: PackedScene
 
 
-func setup(id: int, color: Color, p_pheromone_map: Node2D, p_ants_container: Node2D) -> void:
+func setup(id: int, color: Color, p_pheromone_map: Node2D, p_ants_container: Node2D,
+		initial_ants: int = INITIAL_ANTS) -> void:
 	colony_id = id
 	colony_color = color
 	_pheromone_map = p_pheromone_map
@@ -29,8 +32,10 @@ func setup(id: int, color: Color, p_pheromone_map: Node2D, p_ants_container: Nod
 	food_collected = 0
 	food_for_reproduction = 0
 	is_alive = true
+	ants_spawned = 0
+	combat_losses = 0
 
-	for i in range(INITIAL_ANTS):
+	for i in range(initial_ants):
 		spawn_ant()
 
 
@@ -45,6 +50,7 @@ func spawn_ant() -> void:
 	ant.colony_id = colony_id
 	ant.colony_color = colony_color
 	population += 1
+	ants_spawned += 1
 
 
 func collect_food() -> void:
@@ -57,6 +63,7 @@ func collect_food() -> void:
 
 func on_ant_died() -> void:
 	population -= 1
+	combat_losses += 1
 	if population <= 0:
 		population = 0
 		is_alive = false
