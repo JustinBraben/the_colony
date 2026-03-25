@@ -1,3 +1,4 @@
+class_name Ant
 extends Node2D
 
 enum State { SEARCHING, RETURNING }
@@ -14,6 +15,8 @@ var state: State = State.SEARCHING
 var direction: float = 0.0
 var pheromone_map: Node2D = null
 var colony_position: Vector2 = Vector2.ZERO
+var colony_id: int = 0
+var colony_color: Color = Color.WHITE
 
 var _pheromone_timer: float = 0.0
 
@@ -51,13 +54,13 @@ func _follow_pheromones(delta: float) -> void:
 	var right_val: float
 
 	if state == State.SEARCHING:
-		left_val = pheromone_map.sample_food_pheromone(left_pos)
-		fwd_val = pheromone_map.sample_food_pheromone(fwd_pos)
-		right_val = pheromone_map.sample_food_pheromone(right_pos)
+		left_val = pheromone_map.sample_food_pheromone(left_pos, colony_id)
+		fwd_val = pheromone_map.sample_food_pheromone(fwd_pos, colony_id)
+		right_val = pheromone_map.sample_food_pheromone(right_pos, colony_id)
 	else:
-		left_val = pheromone_map.sample_home_pheromone(left_pos)
-		fwd_val = pheromone_map.sample_home_pheromone(fwd_pos)
-		right_val = pheromone_map.sample_home_pheromone(right_pos)
+		left_val = pheromone_map.sample_home_pheromone(left_pos, colony_id)
+		fwd_val = pheromone_map.sample_home_pheromone(fwd_pos, colony_id)
+		right_val = pheromone_map.sample_home_pheromone(right_pos, colony_id)
 
 	if fwd_val >= left_val and fwd_val >= right_val:
 		pass  # continue straight
@@ -97,9 +100,9 @@ func _drop_pheromone(delta: float) -> void:
 	if _pheromone_timer >= PHEROMONE_INTERVAL:
 		_pheromone_timer = 0.0
 		if state == State.SEARCHING:
-			pheromone_map.add_home_pheromone(global_position, PHEROMONE_STRENGTH)
+			pheromone_map.add_home_pheromone(global_position, PHEROMONE_STRENGTH, colony_id)
 		else:
-			pheromone_map.add_food_pheromone(global_position, PHEROMONE_STRENGTH)
+			pheromone_map.add_food_pheromone(global_position, PHEROMONE_STRENGTH, colony_id)
 
 
 func pick_up_food() -> void:
@@ -113,8 +116,7 @@ func deliver_food() -> void:
 
 
 func _draw() -> void:
-	var body_color := Color(0.9, 0.8, 0.1) if state == State.RETURNING else Color(0.15, 0.08, 0.03)
+	var body_color := colony_color.lightened(0.45) if state == State.RETURNING else colony_color
 	draw_circle(Vector2.ZERO, 3.5, body_color)
-	# Direction indicator
 	var tip := Vector2.from_angle(direction) * 5.5
-	draw_line(Vector2.ZERO, tip, Color(1.0, 1.0, 1.0, 0.45), 1.0)
+	draw_line(Vector2.ZERO, tip, Color(1.0, 1.0, 1.0, 0.4), 1.0)

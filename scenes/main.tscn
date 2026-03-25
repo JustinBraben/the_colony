@@ -1,8 +1,7 @@
-[gd_scene load_steps=5 format=3 uid="uid://colony_main1"]
+[gd_scene load_steps=4 format=3 uid="uid://colony_main1"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_mainscr"]
 [ext_resource type="Script" path="res://scripts/pheromone_map.gd" id="2_pmapscr"]
-[ext_resource type="Script" path="res://scripts/colony.gd" id="3_colscr"]
 [ext_resource type="Script" path="res://scripts/resolution_menu.gd" id="4_resmenu"]
 
 [node name="Main" type="Node2D"]
@@ -11,8 +10,7 @@ script = ExtResource("1_mainscr")
 [node name="PheromoneMap" type="Node2D" parent="."]
 script = ExtResource("2_pmapscr")
 
-[node name="Colony" type="Node2D" parent="."]
-script = ExtResource("3_colscr")
+[node name="Colonies" type="Node2D" parent="."]
 
 [node name="FoodSources" type="Node2D" parent="."]
 
@@ -20,13 +18,11 @@ script = ExtResource("3_colscr")
 
 [node name="UI" type="CanvasLayer" parent="."]
 
-[node name="Label" type="Label" parent="UI"]
+[node name="ColonyStats" type="VBoxContainer" parent="UI"]
 offset_left = 10.0
 offset_top = 10.0
-offset_right = 260.0
-offset_bottom = 38.0
-text = "Food collected: 0"
-theme_override_font_sizes/font_size = 16
+offset_right = 280.0
+offset_bottom = 80.0
 
 [node name="ResolutionMenu" type="Control" parent="UI"]
 anchor_right = 1.0

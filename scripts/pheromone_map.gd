@@ -1,8 +1,8 @@
 extends Node2D
 
-## Grid-based pheromone map with two layers:
-##   food_pheromones - dropped by ants carrying food (guides searchers to food)
-##   home_pheromones - dropped by searching ants (guides returning ants home)
+## Grid-based pheromone map supporting N colony layers.
+## Each colony has its own food and home pheromone channel.
+## Trails are visualised with each colony's colour, blended where they overlap.
 
 const CELL_SIZE := 4
 const EVAPORATION_RATE := 0.9975
@@ -10,8 +10,11 @@ const TEXTURE_UPDATE_INTERVAL := 0.05
 
 var grid_width: int
 var grid_height: int
-var food_pheromones: PackedFloat32Array
-var home_pheromones: PackedFloat32Array
+var colony_count: int = 0
+
+var colony_food: Array[PackedFloat32Array] = []
+var colony_home: Array[PackedFloat32Array] = []
+var colony_colors: Array[Color] = []
 
 var _image: Image
 var _texture: ImageTexture
@@ -25,19 +28,26 @@ func _ready() -> void:
 	_sprite.scale = Vector2(CELL_SIZE, CELL_SIZE)
 	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(_sprite)
-	reinitialize()
 
 
-func reinitialize() -> void:
+func reinitialize(count: int, colors: Array[Color]) -> void:
+	colony_count = count
+	colony_colors = colors
+
 	var viewport_size := get_viewport_rect().size
 	grid_width = int(viewport_size.x) / CELL_SIZE
 	grid_height = int(viewport_size.y) / CELL_SIZE
 
 	var total := grid_width * grid_height
-	food_pheromones = PackedFloat32Array()
-	food_pheromones.resize(total)
-	home_pheromones = PackedFloat32Array()
-	home_pheromones.resize(total)
+	colony_food.clear()
+	colony_home.clear()
+	for i in range(colony_count):
+		var food_arr := PackedFloat32Array()
+		food_arr.resize(total)
+		colony_food.append(food_arr)
+		var home_arr := PackedFloat32Array()
+		home_arr.resize(total)
+		colony_home.append(home_arr)
 
 	_image = Image.create(grid_width, grid_height, false, Image.FORMAT_RGBA8)
 	_texture = ImageTexture.create_from_image(_image)
@@ -48,6 +58,8 @@ func reinitialize() -> void:
 
 
 func _process(delta: float) -> void:
+	if colony_count == 0:
+		return
 	_evaporate()
 	_texture_timer += delta
 	if _texture_timer >= TEXTURE_UPDATE_INTERVAL:
@@ -56,23 +68,35 @@ func _process(delta: float) -> void:
 
 
 func _evaporate() -> void:
-	for i in range(food_pheromones.size()):
-		food_pheromones[i] *= EVAPORATION_RATE
-		home_pheromones[i] *= EVAPORATION_RATE
+	for c in range(colony_count):
+		var food := colony_food[c]
+		var home := colony_home[c]
+		for i in range(food.size()):
+			food[i] *= EVAPORATION_RATE
+			home[i] *= EVAPORATION_RATE
 
 
 func _update_texture() -> void:
-	for i in range(food_pheromones.size()):
+	var total := grid_width * grid_height
+	for i in range(total):
 		var x := i % grid_width
 		var y := i / grid_width
-		var food := minf(food_pheromones[i], 1.0)
-		var home := minf(home_pheromones[i], 1.0)
-		var alpha := maxf(food, home) * 0.85
-		if alpha < 0.01:
+		var r := 0.0
+		var g := 0.0
+		var b := 0.0
+		var a := 0.0
+		for c in range(colony_count):
+			var strength := maxf(colony_food[c][i], colony_home[c][i]) * 0.7
+			if strength > 0.005:
+				var col := colony_colors[c]
+				r += col.r * strength
+				g += col.g * strength
+				b += col.b * strength
+				a = maxf(a, strength)
+		if a < 0.01:
 			_image.set_pixel(x, y, Color(0, 0, 0, 0))
 		else:
-			# food = blue-green teal, home = warm orange
-			_image.set_pixel(x, y, Color(home * 0.85, food * 0.65, food * 0.95, alpha))
+			_image.set_pixel(x, y, Color(minf(r, 1.0), minf(g, 1.0), minf(b, 1.0), a * 0.85))
 	_texture.update(_image)
 
 
@@ -82,19 +106,19 @@ func _world_to_idx(world_pos: Vector2) -> int:
 	return y * grid_width + x
 
 
-func add_food_pheromone(world_pos: Vector2, amount: float) -> void:
+func add_food_pheromone(world_pos: Vector2, amount: float, colony_id: int) -> void:
 	var idx := _world_to_idx(world_pos)
-	food_pheromones[idx] = minf(food_pheromones[idx] + amount, 1.0)
+	colony_food[colony_id][idx] = minf(colony_food[colony_id][idx] + amount, 1.0)
 
 
-func add_home_pheromone(world_pos: Vector2, amount: float) -> void:
+func add_home_pheromone(world_pos: Vector2, amount: float, colony_id: int) -> void:
 	var idx := _world_to_idx(world_pos)
-	home_pheromones[idx] = minf(home_pheromones[idx] + amount, 1.0)
+	colony_home[colony_id][idx] = minf(colony_home[colony_id][idx] + amount, 1.0)
 
 
-func sample_food_pheromone(world_pos: Vector2) -> float:
-	return food_pheromones[_world_to_idx(world_pos)]
+func sample_food_pheromone(world_pos: Vector2, colony_id: int) -> float:
+	return colony_food[colony_id][_world_to_idx(world_pos)]
 
 
-func sample_home_pheromone(world_pos: Vector2) -> float:
-	return home_pheromones[_world_to_idx(world_pos)]
+func sample_home_pheromone(world_pos: Vector2, colony_id: int) -> float:
+	return colony_home[colony_id][_world_to_idx(world_pos)]
