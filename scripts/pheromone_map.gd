@@ -20,6 +20,15 @@ var _texture_timer: float = 0.0
 
 
 func _ready() -> void:
+	_sprite = Sprite2D.new()
+	_sprite.centered = false
+	_sprite.scale = Vector2(CELL_SIZE, CELL_SIZE)
+	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(_sprite)
+	reinitialize()
+
+
+func reinitialize() -> void:
 	var viewport_size := get_viewport_rect().size
 	grid_width = int(viewport_size.x) / CELL_SIZE
 	grid_height = int(viewport_size.y) / CELL_SIZE
@@ -32,13 +41,10 @@ func _ready() -> void:
 
 	_image = Image.create(grid_width, grid_height, false, Image.FORMAT_RGBA8)
 	_texture = ImageTexture.create_from_image(_image)
+	if _sprite:
+		_sprite.texture = _texture
 
-	_sprite = Sprite2D.new()
-	_sprite.texture = _texture
-	_sprite.centered = false
-	_sprite.scale = Vector2(CELL_SIZE, CELL_SIZE)
-	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	add_child(_sprite)
+	_texture_timer = 0.0
 
 
 func _process(delta: float) -> void:

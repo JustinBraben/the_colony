@@ -13,14 +13,29 @@ const FOOD_QUANTITY := 50
 func _ready() -> void:
 	var viewport_size := get_viewport_rect().size
 	colony.position = viewport_size / 2.0
-
 	_spawn_food(viewport_size)
 	colony.setup(pheromone_map, ants_container)
+	get_viewport().size_changed.connect(_on_viewport_resized)
 
 
 func _process(_delta: float) -> void:
 	food_label.text = "Food collected: %d" % colony.food_collected
 	_check_interactions()
+
+
+func _on_viewport_resized() -> void:
+	# Clear first so queue_free completes before new nodes are added
+	for child in ants_container.get_children():
+		child.queue_free()
+	for child in food_sources.get_children():
+		child.queue_free()
+	await get_tree().process_frame
+	var vp := get_viewport_rect().size
+	colony.position = vp / 2.0
+	colony.food_collected = 0
+	pheromone_map.reinitialize()
+	_spawn_food(vp)
+	colony.setup(pheromone_map, ants_container)
 
 
 func _check_interactions() -> void:
